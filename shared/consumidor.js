@@ -54,7 +54,8 @@ async function iniciarConsumidor({ clientId, groupId, procesar }) {
 
     for (let i = 1; i <= 3; i++) {          // reintentos
       try { await procesar(evento); return; }  // negocio
-      catch (e) {
+        catch (e) {
+        if (e.reintentable === false) return enviarADlt(message, partition, e.message);  // directo a la DLT
         console.warn(`[${groupId}] intento ${i} ${evento.eventId} ${e.message}`);
         await new Promise(r => setTimeout(r, 1000 * 2 ** (i - 1)));
       }

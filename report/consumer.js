@@ -1,6 +1,7 @@
 // Servicio report (groupId = report)
 // Calcula ventas por hora, lead time (creado -> entregado) y pedidos activos por estado.
 const { iniciarConsumidor } = require('../shared/consumidor');
+const { transicionValida } = require('../shared/estados');
 
 const ventasPorHora = {};   // '2026-10-27T16' -> total vendido
 const creadoEn = {};        // pedidoId -> fecha PEDIDO_CREADO
@@ -9,6 +10,13 @@ const estadoActual = {};    // pedidoId -> último tipo
 async function procesar(evento) {
   // Falla simulada para mostrar reintentos + DLT (npm run producer -- --falla)
   if (evento.clienteId === 'C-FALLA') throw new Error('error simulado en report');
+
+   const anterior = estadoActual[evento.pedidoId];
+  if (!transicionValida(anterior, evento.tipo)) {
+    const e = new Error(`transicion invalida ${anterior || 'NINGUNO'} -> ${evento.tipo}`);
+    e.reintentable = false;   // error de negocio: reintentar falla igual
+    throw e;
+  }
 
   estadoActual[evento.pedidoId] = evento.tipo;
 
